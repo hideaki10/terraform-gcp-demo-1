@@ -1,0 +1,45 @@
+name: "terraform apply master merge"
+on:
+  pull_request:
+    paths-ignore:
+      - ".github/workflows/**"
+    branches:
+      - main
+    types: [closed]
+
+jobs:
+  terraform:
+    name: "terraform apply main merge"
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.merged == true
+    container: hashicorp/terraform
+    env:
+      GOOGLE_CREDENTIALS: ${{secrets.GOOGLE_CREDENTIALS}}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Get the output time
+        run: echo "container"
+      - name: Check terraform version
+        run: terraform -v
+      - name: terraform init
+        run: terraform init
+      - name: terraform fmt
+        run: terraform fmt
+      - name: terraform apply
+        run: terraform apply -auto-approve
+  slack-workflow-status:
+    name: Post Workflow Status To slack
+    if: always()
+    needs: terraform
+    runs-on: ubuntu-latest
+    steps:
+      - name: SlackWorkFlow Notifiction
+        uses: Gamesight/slack-workflow-status@master
+        with:
+          repo_token: ${{secrets.GITHUB_TOKEN}}
+          slack_webhook_url: ${{secrets.SLACK_WEBHOOK_URL}}
+          # Optional Input
+          name: "本番です"
+          icon_emoji: ":sunny:"
+          icon_url: "https://avatars0.githubusercontent.com/u/1701160?s=96&v=4"
